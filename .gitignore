@@ -1,5 +1,6 @@
 # developer files
 test-*
+*.x
 *.ignore
 *.backup
 *.localhost
