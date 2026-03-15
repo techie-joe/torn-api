@@ -16,6 +16,3 @@ Torn players who want to safely access or share API-based data without exposing 
 
 ## Project Status
 Development
-
-## License
-MIT
