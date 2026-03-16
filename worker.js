@@ -1,7 +1,4 @@
 // worker.js
-const response_headers = {
-  "cache-control": "max-age=60" // 60 sec
-};
 const response = {
   help: ()=>{
     return new Response([
@@ -15,25 +12,29 @@ const response = {
     const selections = parts[3];
     if (!section) {
       return new Response([
-        `Use /${route}/{section}/{id}/{selections}`
-      ].join('\n'), { status: 400 });
-    } else if (!id) {
-      return new Response([
-        `Use /${route}/${section}/{id}/{selections}`
+        `Use /${route}/{section}/{id?}/{selections?}`
       ].join('\n'), { status: 400 });
     }
-    const api = new URL(`https://api.torn.com/${section}/${id}`);
+    const api = new URL(`https://api.torn.com/${section}`+ (id ? `/${id}` : ""));
     api.searchParams.set("key", env.TORN_API_KEY);
     api.searchParams.set("comment", "TORN_API");
     if (selections) {
       api.searchParams.set("selections", selections);
     }
-    const response = await fetch(api);
-    const data = await response.json();
-    response_headers["content-type"] = "application/json";
+    const res = await fetch(api);
+    if (!res.ok) {
+      return new Response(JSON.stringify({
+        error: "Upstream error",
+        status: res.status
+      }), { status: 502 });
+    }
+    const data = await res.json();
     return new Response(JSON.stringify(data), {
       status: 200,
-      headers: response_headers
+      headers: {
+        "content-type": "application/json",
+        "cache-control": "max-age=60"
+      }
     });
   },
   v2: async (parts,env)=>{
@@ -60,11 +61,13 @@ var worker_default = {
     const url = new URL(request.url);
     const parts = url.pathname.split("/").filter(Boolean);
     const route = parts[0];
-    if (response[route]) {
-      return response[route](parts,env);
-    }
-    else {
-      return response.help();
+    switch (route) {
+      case "v1":
+        return response.v1(parts,env);
+      case "v2":
+        return response.v2(parts,env);
+      default:
+        return response.help();
     }
   }
 };
