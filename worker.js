@@ -44,16 +44,30 @@ const response = {
     const selections = parts[3];
     if (!section) {
       return new Response([
-        `Use /${route}/{section}/${id}/${selections}`
-      ].join('\n'), { status: 400 });
-    } else if (!id) {
-      return new Response([
-        `Use /${route}/${section}/{id}/{selections}`
+        `Use /${route}/{section}/{id?}/{selections?}`
       ].join('\n'), { status: 400 });
     }
-    return new Response([
-      `Use /${route}/${section}/${id}/${selections}`
-    ].join('\n'), { status: 400 });
+    const api = new URL(`https://api.torn.com/v2/${section}`+ (id ? `/${id}` : ""));
+    api.searchParams.set("key", env.TORN_API_KEY);
+    api.searchParams.set("comment", "TORN_API");
+    if (selections) {
+      api.searchParams.set("selections", selections);
+    }
+    const res = await fetch(api);
+    if (!res.ok) {
+      return new Response(JSON.stringify({
+        error: "Upstream error",
+        status: res.status
+      }), { status: 502 });
+    }
+    const data = await res.json();
+    return new Response(JSON.stringify(data), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+        "cache-control": "max-age=60"
+      }
+    });
   }
 };
 var worker_default = {
