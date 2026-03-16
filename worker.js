@@ -28,8 +28,8 @@ const response = {
         status: res.status
       }), { status: 502 });
     }
-    const data = await res.json();
-    return new Response(JSON.stringify(data), {
+    const data = await res.text();
+    return new Response(data, {
       status: 200,
       headers: {
         "content-type": "application/json",
